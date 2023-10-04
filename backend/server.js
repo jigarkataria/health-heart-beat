@@ -74,7 +74,7 @@ app.post('/upload', upload.array('files', 3), async (req, res) => {
     }
     const validatedData = data.filter((record) => {
       const { date, day, time, heartRate } = record;
-      return isValidDate(date) && isValidDay(day) && isValidTime(time) && isValidHeartRate(heartRate);
+      return isValidDay(day); 
     });
 
     // Store data in the database
