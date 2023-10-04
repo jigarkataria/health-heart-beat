@@ -38,7 +38,7 @@ const UploadForm = () => {
     });
 
     try {
-      await axios.post('http://localhost:3001/upload', formData, {
+      await axios.post('https://site--health-project--dtyj44glkjlz.code.run/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -54,7 +54,7 @@ const UploadForm = () => {
 
   const getPredictions = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/average/someday'); // Replace 'someday' with the desired day
+      const response = await axios.get('https://site--health-project--dtyj44glkjlz.code.run/average/someday'); // Replace 'someday' with the desired day
       setPredictions(response.data);
     } catch (error) {
       console.error(error);
@@ -63,7 +63,7 @@ const UploadForm = () => {
 
   const resetData = async () => {
     try {
-      await axios.delete('http://localhost:3001/reset');
+      await axios.delete('https://site--health-project--dtyj44glkjlz.code.run/reset');
       alert('Data reset successfully.');
       setPredictions([]);
       setResetClicked(true);
