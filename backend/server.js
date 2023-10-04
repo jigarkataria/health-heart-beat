@@ -46,7 +46,8 @@ app.post('/upload', upload.array('files', 3), async (req, res) => {
 
       // Custom validation functions
       function isValidDate(dateString) {
-        const regex = /^\d{4}-\d{2}-\d{2}$/;
+        const regex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+                      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
         return regex.test(dateString) && new Date(dateString).toISOString().slice(0, 10) === dateString;
       }
 
@@ -74,7 +75,7 @@ app.post('/upload', upload.array('files', 3), async (req, res) => {
     }
     const validatedData = data.filter((record) => {
       const { date, day, time, heartRate } = record;
-      return isValidDate(date) && isValidDay(day) && isValidTime(time) && isValidHeartRate(heartRate);
+      return  isValidDay(day);
     });
 
     // Store data in the database
