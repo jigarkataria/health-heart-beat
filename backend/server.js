@@ -96,7 +96,13 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 app.get('/files/:fileName', async (req, res) => {
   try {
     const fileUrl = await getFileUrl(req.params.fileName);
-    res.json({ fileUrl });
+    res.sendFile(fileUrl, (err) => {
+      if (err) {
+        console.error('Error sending file:', err);
+        res.status(500).send('Failed to send file');
+      }
+    });
+    // res.json({ fileUrl });
   } catch (error) {
     res.status(500).json({ error: 'Error retrieving file' });
   }
