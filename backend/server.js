@@ -83,7 +83,7 @@ app.post('/signup', async (req, res) => {
 
 app.post('/upload', upload.single('file'), async (req, res) => {
   try {
-    uuid();
+    // uuid();
     const fileInfo = await uploadFile(req.file);
     res.json({ message: 'File uploaded successfully', fileInfo });
   } catch (error) {
