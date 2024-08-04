@@ -4,8 +4,14 @@ const ExcelJS = require('exceljs');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const User = require('./models/users'); // Mongoose model users
 const app = express();
+const { uploadFile, getFileUrl } = require('./storageService');
+const upload = multer({ storage: multer.memoryStorage() });
+require('dotenv').config();
+
 app.use(cors());
 app.use(bodyParser.json());
 try {
@@ -20,99 +26,76 @@ try {
   console.log("could not connect");
 }
 
-const Heartbeat = mongoose.model('Heartbeat', {
-  date: Date,
-  time: String,
-  heartRate: Number,
-  day: String,
-});
-
-// Multer setup for file upload
-const storage = multer.memoryStorage();
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB file size limit
-});
-
-// Upload endpoint
-app.post('/upload', upload.array('files', 3), async (req, res) => {
+// health check
+app.get('/', async (req, res) => {
   try {
-    const data = [];
+    res.json({ message : "OK" });
+  } catch (error) {
+    res.status(500).json({ error: 'Error retrieving file' });
+  }
+});
 
-    for (const file of req.files) {
-      const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(file.buffer);
-      const worksheet = workbook.worksheets[0];
-
-      // Custom validation functions
-      function isValidDate(dateString) {
-        const regex = /^\d{4}-\d{2}-\d{2}$/;
-        return regex.test(dateString) && new Date(dateString).toISOString().slice(0, 10) === dateString;
-      }
-
-      function isValidDay(day) {
-        const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-        return daysOfWeek.includes(day);
-      }
-
-      function isValidTime(time) {
-        // Implement your logic to validate time format (8.00-9.00 and equal distance) here
-        // For simplicity, let's assume any time input is valid for now
-        return true;
-      }
-
-
-      worksheet.eachRow((row, rowNumber) => {
-        if (rowNumber > 1) {
-          const [date, time, heartRate, day] = row.values.slice(1);
-          // Validate heart rate (add your validation logic here)
-          if (heartRate >= 60 && heartRate <= 100) {
-            data.push({ date, time, heartRate, day });
-          }
-        }
-      });
+app.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid credentials' });
     }
-    const validatedData = data.filter((record) => {
-      const { date, day, time, heartRate } = record;
-      return isValidDay(day); 
-    });
 
-    // Store data in the database
-    const response = await Heartbeat.insertMany(validatedData);
-    res.status(200).send(response);
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Invalid credentials' });
+    }
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    res.json({ token });
   } catch (error) {
-    console.error(error);
-    res.status(500).send('Internal Server Error');
+    if (error?.name === 'ValidationError') {
+      // Handle validation errors
+      res.status(422).json({ error: 'Error logging in', message: error.errors });
+    } else {
+      res.status(500).json({ error: 'Error logging in' });
+    }
   }
 });
 
-// Averaging function
-app.get('/average/:day', async (req, res) => {
-  const { day } = req.params;
+app.post('/signup', async (req, res) => {
   try {
-    const result = await Heartbeat.aggregate([
-      // { $match: { day: day } },
-      {
-        $group: {
-          _id: { "day": "$day" },
-          averageHeartRate: { $avg: '$heartRate' },
-        },
-      },
-    ]);
-    res.status(200).json(result);
+    const { username, email, password } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = new User({ username, email, password: hashedPassword });
+    await user.save();
+    res.status(201).json({ message: 'User registered successfully.' });
   } catch (error) {
-    res.status(500).send('Internal Server Error');
+    console.log(error,'error')
+    if (error.name === 'ValidationError') {
+      // Handle validation errors
+      res.status(422).json({ error: 'Error registering user', message: error.errors });
+      console.error('Validation Error:', error.errors);
+    } else {
+      res.status(500).json({ error: 'Error registering user' });
+    }
   }
 });
 
-// Reset route
-app.delete('/reset', async (req, res) => {
+app.post('/upload', upload.single('file'), async (req, res) => {
   try {
-    await Heartbeat.deleteMany({});
-    res.status(200).send('All data deleted successfully.');
+    uuid();
+    const fileInfo = await uploadFile(req.file);
+    res.json({ message: 'File uploaded successfully', fileInfo });
   } catch (error) {
-    console.error(error);
-    res.status(500).send('Internal Server Error');
+    console.log(error,'error')
+    res.status(500).json({ error: 'Error uploading file' });
+  }
+});
+
+// uiid
+app.get('/files/:fileName', async (req, res) => {
+  try {
+    const fileUrl = await getFileUrl(req.params.fileName);
+    res.json({ fileUrl });
+  } catch (error) {
+    res.status(500).json({ error: 'Error retrieving file' });
   }
 });
 
