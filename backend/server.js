@@ -29,6 +29,7 @@ try {
 // health check
 app.get('/', async (req, res) => {
   try {
+    console.log("process.env.JWT_SECRET",process.env.JWT_SECRET)
     res.json({ message : "OK" });
   } catch (error) {
     res.status(500).json({ error: 'Error retrieving file' });
