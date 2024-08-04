@@ -10,6 +10,7 @@ const User = require('./models/users'); // Mongoose model users
 const app = express();
 const { uploadFile, getFileUrl } = require('./storageService');
 const upload = multer({ storage: multer.memoryStorage() });
+require('dotenv').config();
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -25,6 +26,14 @@ try {
   console.log("could not connect");
 }
 
+// health check
+app.get('/', async (req, res) => {
+  try {
+    res.json({ message : "OK" });
+  } catch (error) {
+    res.status(500).json({ error: 'Error retrieving file' });
+  }
+});
 
 app.post('/login', async (req, res) => {
   try {
@@ -38,19 +47,15 @@ app.post('/login', async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
-
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
     res.json({ token });
   } catch (error) {
-    console.log(error,'error')
-
-    if (error.name === 'ValidationError') {
+    if (error?.name === 'ValidationError') {
       // Handle validation errors
       res.status(422).json({ error: 'Error logging in', message: error.errors });
     } else {
       res.status(500).json({ error: 'Error logging in' });
     }
-    
   }
 });
 
@@ -68,8 +73,7 @@ app.post('/signup', async (req, res) => {
       res.status(422).json({ error: 'Error registering user', message: error.errors });
       console.error('Validation Error:', error.errors);
     } else {
-    // res.status(500).json({ error: 'Error registering user' });
-
+      res.status(500).json({ error: 'Error registering user' });
     }
   }
 });
