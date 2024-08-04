@@ -55,7 +55,8 @@ app.post('/login', async (req, res) => {
       // Handle validation errors
       res.status(422).json({ error: 'Error logging in', message: error.errors });
     } else {
-      res.status(500).json({ error: 'Error logging in' });
+      console.error('Error during login:', error);
+      res.status(400).send({ error: error.message });
     }
   }
 });
@@ -74,7 +75,8 @@ app.post('/signup', async (req, res) => {
       res.status(422).json({ error: 'Error registering user', message: error.errors });
       console.error('Validation Error:', error.errors);
     } else {
-      res.status(500).json({ error: 'Error registering user' });
+      console.error('Error during signup:', error);
+      res.status(400).send({ error: error.message });
     }
   }
 });
