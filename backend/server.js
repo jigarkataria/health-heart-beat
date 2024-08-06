@@ -11,6 +11,9 @@ const app = express();
 const { uploadFile, getFileUrl } = require('./storageService');
 const upload = multer({ storage: multer.memoryStorage() });
 require('dotenv').config();
+const authRoutes = require('./routes/authRoutes');
+const errorHandler = require('./middlewares/errorHandler'); // Import the error handler
+
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -36,50 +39,53 @@ app.get('/', async (req, res) => {
   }
 });
 
-app.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ error: 'Invalid credentials' });
-    }
+app.use('/api/auth', authRoutes);
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ error: 'Invalid credentials' });
-    }
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.json({ token });
-  } catch (error) {
-    if (error?.name === 'ValidationError') {
-      // Handle validation errors
-      res.status(422).json({ error: 'Error logging in', message: error.errors });
-    } else {
-      console.error('Error during login:', error);
-      res.status(400).send({ error: error.message });
-    }
-  }
-});
 
-app.post('/signup', async (req, res) => {
-  try {
-    const { username, email, password } = req.body;
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({ username, email, password: hashedPassword });
-    await user.save();
-    res.status(201).json({ message: 'User registered successfully.' });
-  } catch (error) {
-    console.log(error,'error')
-    if (error.name === 'ValidationError') {
-      // Handle validation errors
-      res.status(422).json({ error: 'Error registering user', message: error.errors });
-      console.error('Validation Error:', error.errors);
-    } else {
-      console.error('Error during signup:', error);
-      res.status(400).send({ error: error.message });
-    }
-  }
-});
+// app.post('/login', async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+//     const user = await User.findOne({ email });
+//     if (!user) {
+//       return res.status(400).json({ error: 'Invalid credentials' });
+//     }
+
+//     const isMatch = await bcrypt.compare(password, user.password);
+//     if (!isMatch) {
+//       return res.status(400).json({ error: 'Invalid credentials' });
+//     }
+//     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+//     res.json({ token });
+//   } catch (error) {
+//     if (error?.name === 'ValidationError') {
+//       // Handle validation errors
+//       res.status(422).json({ error: 'Error logging in', message: error.errors });
+//     } else {
+//       console.error('Error during login:', error);
+//       res.status(400).send({ error: error.message });
+//     }
+//   }
+// });
+
+// app.post('/signup', async (req, res) => {
+//   try {
+//     const { username, email, password } = req.body;
+//     const hashedPassword = await bcrypt.hash(password, 10);
+//     const user = new User({ username, email, password: hashedPassword });
+//     await user.save();
+//     res.status(201).json({ message: 'User registered successfully.' });
+//   } catch (error) {
+//     console.log(error,'error')
+//     if (error.name === 'ValidationError') {
+//       // Handle validation errors
+//       res.status(422).json({ error: 'Error registering user', message: error.errors });
+//       console.error('Validation Error:', error.errors);
+//     } else {
+//       console.error('Error during signup:', error);
+//       res.status(400).send({ error: error.message });
+//     }
+//   }
+// });
 
 app.post('/upload', upload.single('file'), async (req, res) => {
   try {
@@ -107,6 +113,7 @@ app.get('/files/:fileName', async (req, res) => {
     res.status(500).json({ error: 'Error retrieving file' });
   }
 });
+app.use(errorHandler);
 
 const PORT = 3001;
 app.listen(PORT, () => {

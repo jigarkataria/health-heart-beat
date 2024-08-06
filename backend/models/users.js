@@ -70,6 +70,19 @@ const UserSchema = new Schema({
   updated_at: { 
     type: Date, 
     default: Date.now
+  }, 
+  illness : {
+    type: Array,
+    index: true,
+    required: false
+  },
+  age: {
+    type: Number,
+    required: false
+  }, 
+  weight : {
+    type: Number,
+    required: false
   }
 });
 
