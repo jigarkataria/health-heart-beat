@@ -10,7 +10,8 @@ const MetadataSchema = new Schema({
 
 // Define the main file schema
 const FileSchema = new Schema({
-  user_id: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
+  user_id: { type: Schema.Types.ObjectId, required: true, ref: 'User', index: true },
+  original_file_name: { type: String, required: true },
   file_name: { type: String, required: true },
   file_type: { type: String, required: true },
   file_size: { type: Number, required: true },
@@ -18,8 +19,8 @@ const FileSchema = new Schema({
   storage_type: { type: String, enum: ['local', 's3'], required: true },
   storage_path: { type: String, required: true },
   s3_url: { type: String, required: function() { return this.storage_type === 's3'; } },
-  metadata: MetadataSchema
-});
+  metadata: MetadataSchema, 
+}, { timestamps: true });
 
 // Create and export the model
 const File = mongoose.model('File', FileSchema);

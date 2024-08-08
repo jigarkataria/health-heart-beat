@@ -30,11 +30,11 @@ const s3 = new AWS.S3({
  * @param {Object} file - The file object (from multer or any other source).
  * @returns {Promise<Object>} - The file metadata including storage info.
  */
-async function uploadFile(file) {
+async function uploadFile(file,name) {
   if (config.storage.type === 's3') {
-    return uploadToS3(file);
+    return uploadToS3(file,name);
   } else {
-    return uploadToLocal(file);
+    return uploadToLocal(file,name);
   }
 }
 
@@ -43,9 +43,9 @@ async function uploadFile(file) {
  * @param {Object} file - The file object.
  * @returns {Promise<Object>} - The file metadata.
  */
-function uploadToLocal(file) {
+function uploadToLocal(file,name) {
   return new Promise((resolve, reject) => {
-    const uploadPath = path.join(config.storage.local.path, file.originalname);
+    const uploadPath = path.join(config.storage.local.path, name);
     fs.writeFile(uploadPath, file.buffer, (err) => {
       if (err) {
         return reject(err);

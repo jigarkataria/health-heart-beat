@@ -13,6 +13,10 @@ const upload = multer({ storage: multer.memoryStorage() });
 require('dotenv').config();
 const authRoutes = require('./routes/authRoutes');
 const errorHandler = require('./middlewares/errorHandler'); // Import the error handler
+const authenticateToken = require('./middlewares/authenticateToken'); // Import the error handler
+const File = require('./models/document');
+const { v4: uuidv4 } = require('uuid');
+const path = require('path');
 
 
 app.use(cors());
@@ -87,11 +91,27 @@ app.use('/api/auth', authRoutes);
 //   }
 // });
 
-app.post('/upload', upload.single('file'), async (req, res) => {
+app.post('/upload', authenticateToken, upload.single('file'), async (req, res) => {
   try {
     // uuid();
-    const fileInfo = await uploadFile(req.file);
-    res.json({ message: 'File uploaded successfully', fileInfo });
+    const fileName = Date.now() + path.extname(req.file.originalname);
+
+    const fileInfo = await uploadFile(req.file,fileName);
+    const file = req.file;
+    const document = new File({
+      user_id: req.user.id,
+      original_file_name: file.originalname,
+      file_type: file.mimetype,
+      file_size: file.size,
+      upload_date: new Date(),
+      storage_type: fileInfo.storageType,
+      storage_path: fileInfo.path,
+      s3_url: fileInfo.url,
+      file_name: fileName
+    });
+
+    await document.save();
+    res.status(201).json({ message: 'File uploaded successfully.', document_id: document._id });
   } catch (error) {
     console.log(error,'error')
     res.status(500).json({ error: 'Error uploading file' });
@@ -99,9 +119,9 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 });
 
 // uiid
-app.get('/files/:fileName', async (req, res) => {
+app.get('/file', authenticateToken, async (req, res) => {
   try {
-    const fileUrl = await getFileUrl(req.params.fileName);
+    const fileUrl = await getFileUrl(req.query.fileName);
     res.sendFile(fileUrl, (err) => {
       if (err) {
         console.error('Error sending file:', err);
@@ -109,6 +129,17 @@ app.get('/files/:fileName', async (req, res) => {
       }
     });
     // res.json({ fileUrl });
+  } catch (error) {
+    res.status(500).json({ error: 'Error retrieving file' });
+  }
+});
+
+// uiid
+app.get('/getallfile', authenticateToken, async (req, res) => {
+  try {
+    console.log(req.user,'-- req user ---')
+    const allFiles = await File.find({user_id:req.user.id})
+    res.json({ allFiles });
   } catch (error) {
     res.status(500).json({ error: 'Error retrieving file' });
   }
