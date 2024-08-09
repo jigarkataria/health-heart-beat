@@ -130,6 +130,7 @@ app.get('/file', authenticateToken, async (req, res) => {
     });
     // res.json({ fileUrl });
   } catch (error) {
+    console.log('Error in /file',error);
     res.status(500).json({ error: 'Error retrieving file' });
   }
 });
