@@ -94,6 +94,8 @@ app.use('/api/auth', authRoutes);
 app.post('/upload', authenticateToken, upload.single('file'), async (req, res) => {
   try {
     // uuid();
+
+    console.log(req.file,' --- file ----')
     const fileName = Date.now() + path.extname(req.file.originalname);
 
     const fileInfo = await uploadFile(req.file,fileName);
