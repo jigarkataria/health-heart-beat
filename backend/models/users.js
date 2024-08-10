@@ -59,7 +59,7 @@ const UserSchema = new Schema({
     type: Date, 
     default: Date.now
   },
-  handset_info: { 
+  handset_info: {
     type: HandsetInfoSchema, 
     required: false 
   },
@@ -83,7 +83,11 @@ const UserSchema = new Schema({
   weight : {
     type: Number,
     required: false
-  }
+  },
+  mobile_number: {
+    type: String,
+    unique: true
+  },
 });
 
 // Middleware to update the `updated_at` field before saving
