@@ -121,16 +121,25 @@ app.post('/upload', authenticateToken, upload.single('file'), async (req, res) =
 });
 
 // uiid
-app.get('/file', authenticateToken, async (req, res) => {
+app.get('/file', async (req, res) => {
   try {
+    console.log(req.query.fileName,'req.query.fileNamereq.query.fileName')
     const fileUrl = await getFileUrl(req.query.fileName);
-    res.sendFile(fileUrl, (err) => {
+    // const filePath = path.join(__dirname, 'documents', 'yourfile.pdf'); // Change the path and filename accordingly
+
+    res.download(fileUrl,req.query.fileName, (err) => {
       if (err) {
-        console.error('Error sending file:', err);
-        res.status(500).send('Failed to send file');
+          console.log('Error sending the file:', err);
+          res.status(500).send('Error sending the file');
       }
-    });
-    // res.json({ fileUrl });
+  });
+    // res.sendFile(fileUrl, (err) => {
+    //   if (err) {
+    //     console.error('Error sending file:', err);
+    //     res.status(500).send('Failed to send file');
+    //   }
+    // });
+    // // res.json({ fileUrl });
   } catch (error) {
     console.log('Error in /file',error);
     res.status(500).json({ error: 'Error retrieving file' });
