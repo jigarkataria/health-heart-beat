@@ -121,9 +121,9 @@ app.post('/upload', authenticateToken, upload.single('file'), async (req, res) =
 });
 
 // uiid
-app.get('/file', async (req, res) => {
+app.get('/file', authenticateToken, async (req, res) => {
   try {
-    console.log(req.query.fileName,'req.query.fileNamereq.query.fileName')
+    console.log(req.query.fileName,'req.query.fileNamereq.query.fileName');
     const fileUrl = await getFileUrl(req.query.fileName);
     // const filePath = path.join(__dirname, 'documents', 'yourfile.pdf'); // Change the path and filename accordingly
 
