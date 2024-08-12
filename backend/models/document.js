@@ -19,7 +19,8 @@ const FileSchema = new Schema({
   storage_type: { type: String, enum: ['local', 's3'], required: true },
   storage_path: { type: String, required: true },
   s3_url: { type: String, required: function() { return this.storage_type === 's3'; } },
-  metadata: MetadataSchema, 
+  metadata: MetadataSchema,
+  is_active: { type :Boolean, default : true } 
 }, { timestamps: true });
 
 // Create and export the model

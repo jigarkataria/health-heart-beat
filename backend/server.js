@@ -150,12 +150,18 @@ app.get('/file', async (req, res) => {
 app.get('/getallfile', authenticateToken, async (req, res) => {
   try {
     console.log(req.user,'-- req user ---')
-    const allFiles = await File.find({user_id:req.user.id})
+    const allFiles = await File.find({user_id:req.user.id, is_active : true})
     res.json({ allFiles });
   } catch (error) {
     res.status(500).json({ error: 'Error retrieving file' });
   }
 });
+
+app.delete('/file',authenticateToken,async (req, res) => {
+  const allFiles = await File.findOneAndUpdate({file_name:req.query.fileName, is_active : true},{is_active: false})
+  // res.json({ allFiles });
+  res.status(201).json({ message: 'File Deleted successfully.' });
+})
 app.use(errorHandler);
 
 const PORT = 3001;
