@@ -121,7 +121,7 @@ app.post('/upload', authenticateToken, upload.single('file'), async (req, res) =
 });
 
 // uiid
-app.get('/file', authenticateToken, async (req, res) => {
+app.get('/file', async (req, res) => {
   try {
     console.log(req.query.fileName,'req.query.fileNamereq.query.fileName');
     const fileUrl = await getFileUrl(req.query.fileName);
