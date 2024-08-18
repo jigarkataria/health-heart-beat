@@ -16,7 +16,7 @@ const HandsetInfoSchema = new Schema({
 const UserSchema = new Schema({
   username: { 
     type: String, 
-    required: true, 
+    // required: true, 
     trim: true, 
     unique: true, 
     minlength: 3, // Example validation
@@ -114,14 +114,14 @@ const UserSchema = new Schema({
       }
     }
   },
-  maritalStatus: {
+  marital_status: {
     type: String,
-    required: true,
+    // required: true,
     enum: ['single', 'married', 'divorced', 'widowed'] // Only allowed values
   },
   sex: {
     type: String,
-    required: true,
+    // required: true,
     enum: ['male', 'female', 'other'] // Only allowed values for sex
   },
   ipAddress: {
