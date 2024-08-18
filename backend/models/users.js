@@ -133,6 +133,16 @@ const UserSchema = new Schema({
       },
       message: props => `${props.value} is not a valid IP address!`
     }
+  },
+  dob: {
+    type: Date,
+    required: true, // Date of birth is required
+    validate: {
+      validator: function(v) {
+        return v <= new Date(); // Ensure date of birth is not in the future
+      },
+      message: props => `${props.value} is not a valid date of birth!`
+    }
   }
 });
 
