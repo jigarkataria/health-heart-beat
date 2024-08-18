@@ -88,6 +88,52 @@ const UserSchema = new Schema({
     type: String,
     unique: true
   },
+  height: {
+    feet: {
+      type: Number,
+      required: true,
+      min: 0,   // Minimum valid feet (e.g., 0 feet)
+      max: 8,   // Maximum valid feet (reasonable upper limit, e.g., 8 feet)
+      validate: {
+        validator: function(v) {
+          return v >= 0 && v <= 8;
+        },
+        message: props => `${props.value} is not a valid value for feet!`
+      }
+    },
+    inches: {
+      type: Number,
+      required: true,
+      min: 0,   // Minimum valid inches (e.g., 0 inches)
+      max: 11,  // Maximum valid inches (cannot exceed 11 inches)
+      validate: {
+        validator: function(v) {
+          return v >= 0 && v <= 11;
+        },
+        message: props => `${props.value} is not a valid value for inches!`
+      }
+    }
+  },
+  maritalStatus: {
+    type: String,
+    required: true,
+    enum: ['single', 'married', 'divorced', 'widowed'] // Only allowed values
+  },
+  sex: {
+    type: String,
+    required: true,
+    enum: ['male', 'female', 'other'] // Only allowed values for sex
+  },
+  ipAddress: {
+    type: String,
+    // required: true,
+    validate: {
+      validator: function(v) {
+        return /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(v);
+      },
+      message: props => `${props.value} is not a valid IP address!`
+    }
+  }
 });
 
 // Middleware to update the `updated_at` field before saving
