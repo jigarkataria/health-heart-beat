@@ -42,11 +42,6 @@ router.post('/signup', async (req, res, next) => {
 
 router.post('/updateUser', authenticateToken, async (req, res, next) => {
   try {
-  if(req.body.password){
-    const hashedPassword = await bcrypt.hash(req.body.password, 10);
-    req.body.password = hashedPassword;
-  }
-    req.body.password = hashedPassword;
     const user = User.findOneAndUpdate({_id: req.user.id}, req.body)
     res.status(201).json({ message: 'User updated successfully.' });
   } catch (error) {
