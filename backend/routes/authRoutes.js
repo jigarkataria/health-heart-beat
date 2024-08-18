@@ -42,7 +42,8 @@ router.post('/signup', async (req, res, next) => {
 
 router.post('/updateUser', authenticateToken, async (req, res, next) => {
   try {
-    const user = User.findOneAndUpdate({_id: req.user.id}, req.body)
+    const objectId = req.user.id;
+    const user = await User.findByIdAndUpdate(objectId, req.body)
     res.status(201).json({ message: 'User updated successfully.' });
   } catch (error) {
     next(error);
