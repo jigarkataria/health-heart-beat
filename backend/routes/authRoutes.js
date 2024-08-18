@@ -4,12 +4,13 @@ const User = require('../models/users');
 require('dotenv').config();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const authenticateToken = require('../middlewares/authenticateToken'); // Import the error handler
 
 
 router.post('/login', async (req, res, next) => {
   try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
+    const { mobile_number, password } = req.body;
+    const user = await User.findOne({ mobile_number });
     if (!user) {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
@@ -37,6 +38,20 @@ router.post('/signup', async (req, res, next) => {
     } catch (error) {
       next(error);
     }
+});
+
+router.post('/updateUser', authenticateToken, async (req, res, next) => {
+  try {
+  if(req.body.password){
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
+    req.body.password = hashedPassword;
+  }
+    req.body.password = hashedPassword;
+    const user = User.findOneAndUpdate({_id: req.user.id}, req.body)
+    res.status(201).json({ message: 'User updated successfully.' });
+  } catch (error) {
+    next(error);
+  }
 });
 
 module.exports = router;
