@@ -136,7 +136,6 @@ const UserSchema = new Schema({
   },
   dob: {
     type: Date,
-    required: true, // Date of birth is required
     validate: {
       validator: function(v) {
         return v <= new Date(); // Ensure date of birth is not in the future
