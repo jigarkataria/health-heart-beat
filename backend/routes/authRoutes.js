@@ -28,22 +28,31 @@ router.post('/login', async (req, res, next) => {
 
 router.post('/signup', async (req, res, next) => {
     try {
-       const { username, email, password } = req.body;
-       const hashedPassword = await bcrypt.hash(password, 10);
-    //   const user = new User({ username, email, password: hashedPassword });
-      req.body.password = hashedPassword;
-      const user = new User(req.body);
-      await user.save();
-      res.status(201).json({ message: 'User registered successfully.' });
+      if(req.body.password) {
+        const { password } = req.body;
+        const hashedPassword = await bcrypt.hash(password, 10);
+       req.body.password = hashedPassword;
+       const user = new User(req.body);
+       await user.save();
+       res.status(201).json({ message: 'User registered successfully.' });
+      } else {
+       const user = new User(req.body);
+       await user.save();
+       res.status(201).json({ message: 'User registered successfully.' });
+      }
     } catch (error) {
       next(error);
     }
 });
 
-router.post('/updateUser', authenticateToken, async (req, res, next) => {
+router.post('/updateUser', async (req, res, next) => {
   try {
-    const objectId = req.user.id;
-    const user = await User.findByIdAndUpdate(objectId, req.body)
+    const { password } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    if(password) {
+      req.body.password = hashedPassword;
+    }
+    const user = await User.findOneAndUpdate({email : req.body.email}, req.body)
     res.status(201).json({ message: 'User updated successfully.' });
   } catch (error) {
     next(error);

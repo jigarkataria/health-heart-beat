@@ -3,8 +3,8 @@ const Schema = mongoose.Schema;
 
 // Define the location schema
 const LocationSchema = new Schema({
-  latitude: { type: Number, required: true },
-  longitude: { type: Number, required: true }
+  latitude: { type: Number, required: false },
+  longitude: { type: Number, required: false }
 }, { _id: false }); // Avoid creating an _id field for this subdocument
 
 // Define the handset info schema
@@ -24,7 +24,7 @@ const UserSchema = new Schema({
   },
   email: { 
     type: String, 
-    required: true, 
+    required: false, 
     trim: true, 
     unique: true, 
     lowercase: true, 
@@ -38,7 +38,7 @@ const UserSchema = new Schema({
   },
   password: { 
     type: String, 
-    required: true,
+    required: false,
     minlength: 6 // Example validation
   },
   location: { 
@@ -91,7 +91,7 @@ const UserSchema = new Schema({
   height: {
     feet: {
       type: Number,
-      required: true,
+      required: false,
       min: 0,   // Minimum valid feet (e.g., 0 feet)
       max: 8,   // Maximum valid feet (reasonable upper limit, e.g., 8 feet)
       validate: {
@@ -103,7 +103,7 @@ const UserSchema = new Schema({
     },
     inches: {
       type: Number,
-      required: true,
+      required: false,
       min: 0,   // Minimum valid inches (e.g., 0 inches)
       max: 11,  // Maximum valid inches (cannot exceed 11 inches)
       validate: {
