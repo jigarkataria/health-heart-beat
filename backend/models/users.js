@@ -18,7 +18,7 @@ const UserSchema = new Schema({
     type: String, 
     // required: true, 
     trim: true, 
-    unique: true, 
+    //unique: true, 
     minlength: 3, // Example validation
     maxlength: 50 // Example validation
   },
