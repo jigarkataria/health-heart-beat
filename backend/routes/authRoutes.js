@@ -9,8 +9,8 @@ const crypto = require('crypto');
 const twilio = require('twilio');
 
 // Your Twilio credentials
-const accountSid = 'AC321377ebe85c017c168bd2a8e82201b8';
-const authToken = '5e04b4cbd01e9dfe69bb7fa077632543';
+const accountSid = process.env.accountSid; 
+const authToken = process.env.authToken;
 const client = new twilio(accountSid, authToken);
 
 router.post('/login', async (req, res, next) => {
