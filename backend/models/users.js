@@ -142,6 +142,14 @@ const UserSchema = new Schema({
       },
       message: props => `${props.value} is not a valid date of birth!`
     }
+  },
+  resetOTP: {
+    type: String,
+    required: false
+  },
+  otpExpires: {
+    type: Date,
+    required: false
   }
 });
 
