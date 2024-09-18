@@ -112,8 +112,6 @@ router.post('/request-reset-password', async (req, res) => {
   
   const user = await User.findOne({ mobile_number });
   if (!user) return res.status(404).json({ message: 'User not found' });
-let sid = "AC321377ebe85c017c168bd2a8e82201b8";
-let secret = "21bc82d7034b986140efad9b32ea8c71"
   const otp = generateOTP();
 
   // Store OTP in user’s record with expiration
