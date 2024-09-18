@@ -9,8 +9,8 @@ const crypto = require('crypto');
 const twilio = require('twilio');
 
 // Your Twilio credentials
-const accountSid = process.env.accountSid; 
-const authToken = process.env.authToken;
+const accountSid = decrypt(process.env.accountSid,process.env.JWT_SECRET); 
+const authToken = decrypt(process.env.authToken,process.env.JWT_SECRET)
 const client = new twilio(accountSid, authToken);
 
 router.post('/login', async (req, res, next) => {
@@ -74,12 +74,46 @@ const generateOTP = () => {
 const generateToken = () => {
   return crypto.randomBytes(20).toString('hex'); // Token
 };
+
+// Simple encryption function
+function encrypt(text, secretKey) {
+  const algorithm = 'aes-256-cbc';
+  const iv = crypto.randomBytes(16); // Generate random IV
+
+  // Ensure the key is 32 bytes (256 bits) for AES-256
+  const key = crypto.createHash('sha256').update(secretKey).digest('base64').substr(0, 32);
+
+  const cipher = crypto.createCipheriv(algorithm, key, iv);
+  let encrypted = cipher.update(text);
+  encrypted = Buffer.concat([encrypted, cipher.final()]);
+
+  // Return IV and encrypted data as hex string
+  return iv.toString('hex') + ':' + encrypted.toString('hex');
+}
+
+// Simple decryption function
+function decrypt(encryptedText, secretKey) {
+  const algorithm = 'aes-256-cbc';
+  const textParts = encryptedText.split(':');
+  const iv = Buffer.from(textParts[0], 'hex');
+  const encryptedData = Buffer.from(textParts[1], 'hex');
+
+  // Ensure the key is 32 bytes (256 bits) for AES-256
+  const key = crypto.createHash('sha256').update(secretKey).digest('base64').substr(0, 32);
+
+  const decipher = crypto.createDecipheriv(algorithm, key, iv);
+  let decrypted = decipher.update(encryptedData);
+  decrypted = Buffer.concat([decrypted, decipher.final()]);
+
+  return decrypted.toString();
+}
 router.post('/request-reset-password', async (req, res) => {
   const { mobile_number } = req.body;
   
   const user = await User.findOne({ mobile_number });
   if (!user) return res.status(404).json({ message: 'User not found' });
-
+let sid = "AC321377ebe85c017c168bd2a8e82201b8";
+let secret = "21bc82d7034b986140efad9b32ea8c71"
   const otp = generateOTP();
 
   // Store OTP in user’s record with expiration
