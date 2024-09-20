@@ -139,7 +139,19 @@ const saveNewPassword = async (userId, newPassword) => {
 };
 
 router.post('/reset-password', async (req, res) => {
-  const { mobile_number, otp, newPassword } = req.body;
+  const { mobile_number, newPassword } = req.body;
+  const user = await User.findOne({ mobile_number });
+  if (!user) return res.status(404).json({ message: 'User not found' });
+
+
+  // Hash and save the new password
+  await saveNewPassword(user._id, newPassword);
+
+  res.status(200).json({ message: 'Password reset successfully' });
+});
+
+router.post('/check-otp', async (req, res) => {
+  const { mobile_number, otp } = req.body;
 
   const user = await User.findOne({ mobile_number });
   if (!user) return res.status(404).json({ message: 'User not found' });
@@ -149,15 +161,12 @@ router.post('/reset-password', async (req, res) => {
     return res.status(400).json({ message: 'Invalid or expired OTP' });
   }
 
-  // Hash and save the new password
-  await saveNewPassword(user._id, newPassword);
-
   // Clear the OTP
   user.resetOTP = undefined;
   user.otpExpires = undefined;
   await user.save();
 
-  res.status(200).json({ message: 'Password reset successfully' });
-});
+  res.status(200).json({ message: 'OTP checked successfully' });
+})
 
 module.exports = router;
