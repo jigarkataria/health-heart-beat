@@ -14,64 +14,64 @@ const HandsetInfoSchema = new Schema({
 
 // Define the main user schema
 const UserSchema = new Schema({
-  username: { 
-    type: String, 
+  username: {
+    type: String,
     // required: true, 
-    trim: true, 
+    trim: true,
     //unique: true, 
     minlength: 3, // Example validation
     maxlength: 50 // Example validation
   },
-  email: { 
-    type: String, 
-    required: false, 
-    trim: true, 
-    unique: true, 
-    lowercase: true, 
+  email: {
+    type: String,
+    required: false,
+    trim: true,
+    unique: true,
+    lowercase: true,
     validate: {
-      validator: function(v) {
+      validator: function (v) {
         // Simple email validation regex
         return /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/.test(v);
       },
       message: props => `${props.value} is not a valid email address!`
     }
   },
-  password: { 
-    type: String, 
+  password: {
+    type: String,
     required: false,
     minlength: 6 // Example validation
   },
-  location: { 
-    type: LocationSchema, 
-    required: false 
+  location: {
+    type: LocationSchema,
+    required: false
   },
-  network_throughput: { 
-    type: Number, 
+  network_throughput: {
+    type: Number,
     required: false,
     min: 0 // Example validation
   },
-  signal_conditions: { 
-    type: String, 
+  signal_conditions: {
+    type: String,
     required: false,
-    trim: true 
+    trim: true
   },
-  last_updated: { 
-    type: Date, 
+  last_updated: {
+    type: Date,
     default: Date.now
   },
   handset_info: {
-    type: HandsetInfoSchema, 
-    required: false 
+    type: HandsetInfoSchema,
+    required: false
   },
-  created_at: { 
-    type: Date, 
+  created_at: {
+    type: Date,
     default: Date.now
   },
-  updated_at: { 
-    type: Date, 
+  updated_at: {
+    type: Date,
     default: Date.now
-  }, 
-  illness : {
+  },
+  illness: {
     type: Array,
     index: true,
     required: false
@@ -79,8 +79,8 @@ const UserSchema = new Schema({
   age: {
     type: Number,
     required: false
-  }, 
-  weight : {
+  },
+  weight: {
     type: Number,
     required: false
   },
@@ -95,7 +95,7 @@ const UserSchema = new Schema({
       min: 0,   // Minimum valid feet (e.g., 0 feet)
       max: 8,   // Maximum valid feet (reasonable upper limit, e.g., 8 feet)
       validate: {
-        validator: function(v) {
+        validator: function (v) {
           return v >= 0 && v <= 8;
         },
         message: props => `${props.value} is not a valid value for feet!`
@@ -107,7 +107,7 @@ const UserSchema = new Schema({
       min: 0,   // Minimum valid inches (e.g., 0 inches)
       max: 11,  // Maximum valid inches (cannot exceed 11 inches)
       validate: {
-        validator: function(v) {
+        validator: function (v) {
           return v >= 0 && v <= 11;
         },
         message: props => `${props.value} is not a valid value for inches!`
@@ -128,7 +128,7 @@ const UserSchema = new Schema({
     type: String,
     // required: true,
     validate: {
-      validator: function(v) {
+      validator: function (v) {
         return /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(v);
       },
       message: props => `${props.value} is not a valid IP address!`
@@ -137,7 +137,7 @@ const UserSchema = new Schema({
   dob: {
     type: Date,
     validate: {
-      validator: function(v) {
+      validator: function (v) {
         return v <= new Date(); // Ensure date of birth is not in the future
       },
       message: props => `${props.value} is not a valid date of birth!`
@@ -150,11 +150,20 @@ const UserSchema = new Schema({
   otpExpires: {
     type: Date,
     required: false
+  },
+  aadhaarNumber: {
+    type: String, required: false
+  },
+  reference_id: {
+    type: String, required: false
+  },
+  mobile_hash: {
+    type: String, required: false
   }
 });
 
 // Middleware to update the `updated_at` field before saving
-UserSchema.pre('save', function(next) {
+UserSchema.pre('save', function (next) {
   this.updated_at = Date.now();
   next();
 });
