@@ -74,16 +74,16 @@ router.post('/signup', async (req, res, next) => {
 
     // Check for missing required fields
     if (!email || !mobile_number || !aadhaarNumber) {
-      return res.status(400).json({ message: 'Email, mobile number and aadhaarNumber are required.' });
+      return res.status(400).json({ error:  'Email, mobile number and aadhaarNumber are required.'  });
     }
 
     // Check if the user is already registered by email or mobile number
     const existingUser = await User.findOne({
-      $or: [{ email }, { mobile_number }, {aadhaarNumber}]
-    }).sort({_id:-1});
+      $or: [{ email }, { mobile_number }, { aadhaarNumber }]
+    }).sort({ _id: -1 });
 
     if (existingUser) {
-      return res.status(409).json({ error : {message: 'User already registered with this email or mobile number.' }});
+      return res.status(409).json({ error:  'User already registered with this email or mobile number.'  });
     }
 
     // Create a new user instance
@@ -91,21 +91,21 @@ router.post('/signup', async (req, res, next) => {
 
     // If Aadhaar number is provided, send OTP for Aadhaar verification
     if (aadhaarNumber) {
-    let aadhaarResponse;
-    try {
-      aadhaarResponse = await sendOtpAadhaar(mobile_number, aadhaarNumber);
-    } catch (aadhaarError) {
-      console.log(aadhaarError, '--aadhaar Error')
-      return res.status(502).json({ error: { message: 'Failed to connect to Aadhaar service. Please try again later.' } });
-    }
+      let aadhaarResponse;
+      try {
+        aadhaarResponse = await sendOtpAadhaar(mobile_number, aadhaarNumber);
+      } catch (aadhaarError) {
+        console.log(aadhaarError, '--aadhaar Error')
+        return res.status(502).json({ error:  'Failed to connect to Aadhaar service. Please try again later.'  });
+      }
 
-    if (aadhaarResponse?.data?.data?.message === 'OTP sent successfully') {
-      user.reference_id = aadhaarResponse?.data?.data?.reference_id;
-      await user.save();
-      return res.status(201).json({ message: 'User registered successfully. Aadhaar OTP sent.' });
-    } else {
-      return res.status(422).json({ error: { message: `Aadhaar verification failed: ${aadhaarResponse?.data?.data?.message || aadhaarResponse?.message}` } });
-    }
+      if (aadhaarResponse?.data?.data?.message === 'OTP sent successfully') {
+        user.reference_id = aadhaarResponse?.data?.data?.reference_id;
+        await user.save();
+        return res.status(201).json({ message: 'User registered successfully. Aadhaar OTP sent.' });
+      } else {
+        return res.status(422).json({ error:  `Aadhaar verification failed: ${aadhaarResponse?.data?.data?.message || aadhaarResponse?.message}`  });
+      }
     }
 
     // Save user without Aadhaar verification
@@ -116,7 +116,7 @@ router.post('/signup', async (req, res, next) => {
     console.log(error)
     // Handle validation or other errors
     if (error.name === 'ValidationError') {
-      return res.status(400).json({ error: { message: error.message }});
+      return res.status(400).json({ error: { message: error.message } });
     }
     return next(error);
   }
