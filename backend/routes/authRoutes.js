@@ -358,106 +358,113 @@ async function sendOtpAadhaar(mobile, aadhaar_number) {
 }
 
 
-// router.post('/verify-aadhaar-otp', async (req, res) => {
-//   try {
-//     const { mobile_number, otp } = req.body;
-//     const user = await User.findOne({ mobile_number });
-//     const token = await getAuthToken();
-
-//     const response = await axios.post('https://api.sandbox.co.in/kyc/aadhaar/okyc/otp/verify', {
-//       '@entity': 'in.co.sandbox.kyc.aadhaar.okyc.request',
-//       reference_id: user?.reference_id,
-//       otp: otp
-//     }, {
-//       headers: {
-//         'authorization': token,
-//         'x-api-key': 'key_live_b8P6Xan5P9Id2VzLdSijJLA97ZBIh7S1',
-//         'x-api-version': '2.0',
-//         'Content-Type': 'application/json'
-//       },
-//     });
-//     // console.log(response, '--response ---')
-//     if (response?.data?.data?.message === 'Aadhaar Card Exists') {
-//       // console.log(response?.data?.data?.mobile_hash, '--esponse?.data?.data?.mobile_hash--')
-//       await User.findOneAndUpdate({ email: user.mobile_number }, { mobile_hash: response?.data?.data?.mobile_hash })
-//       res.send({ message: response?.data?.data?.message })
-//     } else {
-//       res.status(422).send({ error: { message: response?.data?.data?.message } })
-//     }
-
-//   } catch (error) {
-//     res.status(500).send({ error })
-//   }
-
-// })
-
 router.post('/verify-aadhaar-otp', async (req, res) => {
   try {
     const { mobile_number, otp } = req.body;
     const user = await User.findOne({ mobile_number });
-    // Check if mobile number or aadhaar number is missing
-    if (!mobile_number || !aadhaar_number) {
-      return res.status(400).json({ error: 'Mobile number and Aadhaar number are required.' });
-    }
-
-    // Check if Aadhaar number is valid (e.g., 12 digits)
-    if (!/^\d{12}$/.test(aadhaar_number)) {
-      return res.status(400).json({ error: 'Invalid Aadhaar number format. Aadhaar number must be 12 digits.' });
-    }
-
-    // Retrieve authorization token
-    let token;
     try {
       token = await getAuthToken();
     } catch (authError) {
       return res.status(500).json({ message: 'Failed to retrieve authorization token.', error: "Something went wrong please try again." });
     }
-
-    // Proceed to send OTP to Aadhaar API
-    let response;
     try {
-      response = await axios.post('https://api.sandbox.co.in/kyc/aadhaar/okyc/otp', {
-        'consent': 'Y',
-        'reason': 'Testing new application',
-        'aadhaar_number': aadhaar_number,
-        "@entity": "in.co.sandbox.kyc.aadhaar.okyc.otp.request"
-      }, {
-        headers: {
-          'authorization': token,
-          'x-api-key': 'key_live_b8P6Xan5P9Id2VzLdSijJLA97ZBIh7S1',
-          'x-api-version': '2.0',
-          'Content-Type': 'application/json'
-        },
-      });
-    } catch (apiError) {
-      // Handle errors from the Aadhaar API
-      if (apiError.response) {
-        // API responded but with an error status (4xx or 5xx)
-        return res.status(apiError.response.status).json({
-          message: `Aadhaar API Error: ${apiError.response.data.message || 'Unknown error'}`,
-          error:  "Please try again later." 
-        });
-      } else if (apiError.request) {
-        // Request was made but no response was received
-        return res.status(502).json({ error: 'No response from Aadhaar API. Please try again later.' });
-      } else {
-        // Something happened in setting up the request
-        return res.status(500).json({ message: `Error setting up the request ${apiError.message}`, error: "Please try again later." });
-      }
-    }
-
-    // Check the response from the Aadhaar API
-    const { data } = response;
-    if (data && data.data && data.data.message === 'OTP sent successfully') {
-      return res.status(200).json({ message: 'OTP sent successfully.', reference_id: data.data.reference_id });
+    const response = await axios.post('https://api.sandbox.co.in/kyc/aadhaar/okyc/otp/verify', {
+      '@entity': 'in.co.sandbox.kyc.aadhaar.okyc.request',
+      reference_id: user?.reference_id,
+      otp: otp
+    }, {
+      headers: {
+        'authorization': token,
+        'x-api-key': 'key_live_b8P6Xan5P9Id2VzLdSijJLA97ZBIh7S1',
+        'x-api-version': '2.0',
+        'Content-Type': 'application/json'
+      },
+    });
+    // console.log(response, '--response ---')
+    if (response?.data?.data?.message === 'Aadhaar Card Exists') {
+      // console.log(response?.data?.data?.mobile_hash, '--esponse?.data?.data?.mobile_hash--')
+      await User.findOneAndUpdate({ email: user.mobile_number }, { mobile_hash: response?.data?.data?.mobile_hash })
+      res.send({ message: response?.data?.data?.message })
     } else {
-      // If OTP was not sent successfully
-      return res.status(422).json({ error: 'Failed to send OTP. Please check the details and try again.' });
+      res.status(422).send({ error: { message: response?.data?.data?.message } })
     }
+  } catch (error) {
+    res.status('500').send({message:error, error:"Something went wrong please try again."})
+  }
 
   } catch (error) {
-    // Catch any unexpected errors
-    return res.status(500).json({ message: 'An unexpected error occurred.', error: error.message });
+    res.status(500).send({ error })
   }
+
 })
+
+// router.post('/verify-aadhaar-otp', async (req, res) => {
+//   try {
+//     const { mobile_number, otp } = req.body;
+//     const user = await User.findOne({ mobile_number });
+//     // Check if mobile number or aadhaar number is missing
+//     if (!mobile_number || !aadhaar_number) {
+//       return res.status(400).json({ error: 'Mobile number and Aadhaar number are required.' });
+//     }
+
+//     // Check if Aadhaar number is valid (e.g., 12 digits)
+//     if (!/^\d{12}$/.test(aadhaar_number)) {
+//       return res.status(400).json({ error: 'Invalid Aadhaar number format. Aadhaar number must be 12 digits.' });
+//     }
+
+//     // Retrieve authorization token
+//     let token;
+//     try {
+//       token = await getAuthToken();
+//     } catch (authError) {
+//       return res.status(500).json({ message: 'Failed to retrieve authorization token.', error: "Something went wrong please try again." });
+//     }
+
+//     // Proceed to send OTP to Aadhaar API
+//     let response;
+//     try {
+//       response = await axios.post('https://api.sandbox.co.in/kyc/aadhaar/okyc/otp', {
+//         'consent': 'Y',
+//         'reason': 'Testing new application',
+//         'aadhaar_number': aadhaar_number,
+//         "@entity": "in.co.sandbox.kyc.aadhaar.okyc.otp.request"
+//       }, {
+//         headers: {
+//           'authorization': token,
+//           'x-api-key': 'key_live_b8P6Xan5P9Id2VzLdSijJLA97ZBIh7S1',
+//           'x-api-version': '2.0',
+//           'Content-Type': 'application/json'
+//         },
+//       });
+//     } catch (apiError) {
+//       // Handle errors from the Aadhaar API
+//       if (apiError.response) {
+//         // API responded but with an error status (4xx or 5xx)
+//         return res.status(apiError.response.status).json({
+//           message: `Aadhaar API Error: ${apiError.response.data.message || 'Unknown error'}`,
+//           error:  "Please try again later." 
+//         });
+//       } else if (apiError.request) {
+//         // Request was made but no response was received
+//         return res.status(502).json({ error: 'No response from Aadhaar API. Please try again later.' });
+//       } else {
+//         // Something happened in setting up the request
+//         return res.status(500).json({ message: `Error setting up the request ${apiError.message}`, error: "Please try again later." });
+//       }
+//     }
+
+//     // Check the response from the Aadhaar API
+//     const { data } = response;
+//     if (data && data.data && data.data.message === 'OTP sent successfully') {
+//       return res.status(200).json({ message: 'OTP sent successfully.', reference_id: data.data.reference_id });
+//     } else {
+//       // If OTP was not sent successfully
+//       return res.status(422).json({ error: 'Failed to send OTP. Please check the details and try again.' });
+//     }
+
+//   } catch (error) {
+//     // Catch any unexpected errors
+//     return res.status(500).json({ message: 'An unexpected error occurred.', error: error.message });
+//   }
+// })
 module.exports = router;
