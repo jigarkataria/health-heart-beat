@@ -74,7 +74,7 @@ router.post('/signup', async (req, res, next) => {
 
     // Check for missing required fields
     if (!email || !mobile_number || !aadhaarNumber) {
-      return res.status(400).json({ error:  'Email, mobile number and aadhaarNumber are required.'  });
+      return res.status(400).json({ error: 'Email, mobile number and aadhaarNumber are required.' });
     }
 
     // Check if the user is already registered by email or mobile number
@@ -83,7 +83,7 @@ router.post('/signup', async (req, res, next) => {
     }).sort({ _id: -1 });
 
     if (existingUser) {
-      return res.status(409).json({ error:  'User already registered with this email or mobile number.'  });
+      return res.status(409).json({ error: 'User already registered with this email or mobile number.' });
     }
 
     // Create a new user instance
@@ -96,15 +96,15 @@ router.post('/signup', async (req, res, next) => {
         aadhaarResponse = await sendOtpAadhaar(mobile_number, aadhaarNumber);
       } catch (aadhaarError) {
         console.log(aadhaarError, '--aadhaar Error')
-        return res.status(502).json({ error:  'Failed to connect to Aadhaar service. Please try again later.'  });
+        return res.status(502).json({ error: 'Failed to connect to Aadhaar service. Please try again later.' });
       }
-
-      if (aadhaarResponse?.data?.data?.message === 'OTP sent successfully') {
+      console.log(aadhaarResponse?.message, '------aadhaarResponse--------')
+      if (aadhaarResponse.message === 'OTP sent successfully.') {
         user.reference_id = aadhaarResponse?.data?.data?.reference_id;
         await user.save();
         return res.status(201).json({ message: 'User registered successfully. Aadhaar OTP sent.' });
       } else {
-        return res.status(422).json({ error:  `Aadhaar verification failed: ${aadhaarResponse?.data?.data?.message || aadhaarResponse?.message}`  });
+        return res.status(422).json({ error: `Aadhaar verification failed: ${aadhaarResponse?.data?.data?.message || aadhaarResponse?.message}` });
       }
     }
 
@@ -116,7 +116,7 @@ router.post('/signup', async (req, res, next) => {
     console.log(error)
     // Handle validation or other errors
     if (error.name === 'ValidationError') {
-      return res.status(400).json({ error: { message: error.message } });
+      return res.status(400).json({ error: error.message });
     }
     return next(error);
   }
@@ -231,7 +231,7 @@ router.post('/check-otp', async (req, res) => {
 
   // Check if OTP is valid and not expired
   if (user.resetOTP !== otp || Date.now() > user.otpExpires) {
-    return res.status(400).json({ message: 'Invalid or expired OTP', error: { message: 'Invalid or expired OTP' } });
+    return res.status(400).json({ message: 'Invalid or expired OTP', error: 'Invalid or expired OTP' });
   }
 
   // Clear the OTP
@@ -289,7 +289,7 @@ async function getAuthToken() {
 
 // }
 
-async function sendOtpAadhaar(aadhaar_number) {
+async function sendOtpAadhaar(mobile, aadhaar_number) {
   try {
     // Check if mobile number or aadhaar number is missing
     if (!aadhaar_number) {
@@ -297,9 +297,9 @@ async function sendOtpAadhaar(aadhaar_number) {
     }
 
     // Check if Aadhaar number is valid (e.g., 12 digits)
-    if (!/^\d{12}$/.test(aadhaar_number)) {
-      return ({ message: 'Invalid Aadhaar number format. Aadhaar number must be 12 digits.' });
-    }
+    // if (!/^\d{12}$/.test(aadhaar_number)) {
+    //   return ({ message: 'Invalid Aadhaar number format. Aadhaar number must be 12 digits.' });
+    // }
 
     // Retrieve authorization token
     let token;
@@ -335,7 +335,7 @@ async function sendOtpAadhaar(aadhaar_number) {
         });
       } else if (apiError.request) {
         // Request was made but no response was received
-        return json({ message: 'No response from Aadhaar API. Please try again later.' });
+        return json({ message: 'No response from Aadhaar API. Please try again later.', error: 'No response from Aadhaar API. Please try again later.' });
       } else {
         // Something happened in setting up the request
         return json({ message: 'Error setting up the request.', error: apiError.message });
@@ -397,12 +397,12 @@ router.post('/verify-aadhaar-otp', async (req, res) => {
     const user = await User.findOne({ mobile_number });
     // Check if mobile number or aadhaar number is missing
     if (!mobile_number || !aadhaar_number) {
-      return res.status(400).json({ error: { message: 'Mobile number and Aadhaar number are required.' } });
+      return res.status(400).json({ error: 'Mobile number and Aadhaar number are required.' });
     }
 
     // Check if Aadhaar number is valid (e.g., 12 digits)
     if (!/^\d{12}$/.test(aadhaar_number)) {
-      return res.status(400).json({ error: { message: 'Invalid Aadhaar number format. Aadhaar number must be 12 digits.' } });
+      return res.status(400).json({ error: 'Invalid Aadhaar number format. Aadhaar number must be 12 digits.' });
     }
 
     // Retrieve authorization token
@@ -410,7 +410,7 @@ router.post('/verify-aadhaar-otp', async (req, res) => {
     try {
       token = await getAuthToken();
     } catch (authError) {
-      return res.status(500).json({ message: 'Failed to retrieve authorization token.', error: { message: "Something went wrong please try again." } });
+      return res.status(500).json({ message: 'Failed to retrieve authorization token.', error: "Something went wrong please try again." });
     }
 
     // Proceed to send OTP to Aadhaar API
@@ -435,14 +435,14 @@ router.post('/verify-aadhaar-otp', async (req, res) => {
         // API responded but with an error status (4xx or 5xx)
         return res.status(apiError.response.status).json({
           message: `Aadhaar API Error: ${apiError.response.data.message || 'Unknown error'}`,
-          error: { message: "Please try again later." }
+          error:  "Please try again later." 
         });
       } else if (apiError.request) {
         // Request was made but no response was received
-        return res.status(502).json({ error: { message: 'No response from Aadhaar API. Please try again later.' } });
+        return res.status(502).json({ error: 'No response from Aadhaar API. Please try again later.' });
       } else {
         // Something happened in setting up the request
-        return res.status(500).json({ message: 'Error setting up the request.', error: apiError.message, error: { message: "Please try again later." } });
+        return res.status(500).json({ message: `Error setting up the request ${apiError.message}`, error: "Please try again later." });
       }
     }
 
@@ -452,12 +452,12 @@ router.post('/verify-aadhaar-otp', async (req, res) => {
       return res.status(200).json({ message: 'OTP sent successfully.', reference_id: data.data.reference_id });
     } else {
       // If OTP was not sent successfully
-      return res.status(422).json({ error: { message: 'Failed to send OTP. Please check the details and try again.' } });
+      return res.status(422).json({ error: 'Failed to send OTP. Please check the details and try again.' });
     }
 
   } catch (error) {
     // Catch any unexpected errors
-    return res.status(500).json({ message: 'An unexpected error occurred.', error: { message: error.message } });
+    return res.status(500).json({ message: 'An unexpected error occurred.', error: error.message });
   }
 })
 module.exports = router;
