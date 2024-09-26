@@ -159,6 +159,9 @@ const UserSchema = new Schema({
   },
   mobile_hash: {
     type: String, required: false
+  },
+  status: {
+    type: String
   }
 });
 

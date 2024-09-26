@@ -36,8 +36,8 @@ try {
 // health check
 app.get('/', async (req, res) => {
   try {
-    console.log("process.env.JWT_SECRET",process.env.JWT_SECRET)
-    res.json({ message : "OK" });
+    console.log("process.env.JWT_SECRET", process.env.JWT_SECRET)
+    res.json({ message: "OK" });
   } catch (error) {
     res.status(500).json({ error: 'Error retrieving file' });
   }
@@ -95,10 +95,10 @@ app.post('/upload', authenticateToken, upload.single('file'), async (req, res) =
   try {
     // uuid();
 
-    console.log(req.file,' --- file ----')
+    console.log(req.file, ' --- file ----')
     const fileName = Date.now() + path.extname(req.file.originalname);
 
-    const fileInfo = await uploadFile(req.file,fileName);
+    const fileInfo = await uploadFile(req.file, fileName);
     const file = req.file;
     const document = new File({
       user_id: req.user.id,
@@ -115,24 +115,24 @@ app.post('/upload', authenticateToken, upload.single('file'), async (req, res) =
     await document.save();
     res.status(201).json({ message: 'File uploaded successfully.', document_id: document._id });
   } catch (error) {
-    console.log(error,'error')
-    res.status(500).json({ error: 'Error uploading file' });
+    console.log(error, 'error')
+    res.status(500).json({ error: { message: 'Error uploading file' } });
   }
 });
 
 // uiid
 app.get('/file', async (req, res) => {
   try {
-    console.log(req.query.fileName,'req.query.fileNamereq.query.fileName');
+    console.log(req.query.fileName, 'req.query.fileNamereq.query.fileName');
     const fileUrl = await getFileUrl(req.query.fileName);
     // const filePath = path.join(__dirname, 'documents', 'yourfile.pdf'); // Change the path and filename accordingly
 
-    res.download(fileUrl,req.query.fileName, (err) => {
+    res.download(fileUrl, req.query.fileName, (err) => {
       if (err) {
-          console.log('Error sending the file:', err);
-          res.status(500).send('Error sending the file');
+        console.log('Error sending the file:', err);
+        res.status(500).send('Error sending the file');
       }
-  });
+    });
     // res.sendFile(fileUrl, (err) => {
     //   if (err) {
     //     console.error('Error sending file:', err);
@@ -141,26 +141,32 @@ app.get('/file', async (req, res) => {
     // });
     // // res.json({ fileUrl });
   } catch (error) {
-    console.log('Error in /file',error);
-    res.status(500).json({ error: 'Error retrieving file' });
+    console.log('Error in /file', error);
+    res.status(500).json({ error: { message: 'Error retrieving file' } });
   }
 });
 
 // uiid
 app.get('/getallfile', authenticateToken, async (req, res) => {
   try {
-    console.log(req.user,'-- req user ---')
-    const allFiles = await File.find({user_id:req.user.id, is_active : true})
+    console.log(req.user, '-- req user ---')
+    const allFiles = await File.find({ user_id: req.user.id, is_active: true })
     res.json({ allFiles });
   } catch (error) {
-    res.status(500).json({ error: 'Error retrieving file' });
+    res.status(500).json({ error: { message: 'Error retrieving file' } });
   }
 });
 
-app.delete('/file',authenticateToken,async (req, res) => {
-  const allFiles = await File.findOneAndUpdate({file_name:req.query.fileName, is_active : true},{is_active: false})
-  // res.json({ allFiles });
-  res.status(201).json({ message: 'File Deleted successfully.' });
+app.delete('/file', authenticateToken, async (req, res) => {
+  try {
+    const allFiles = await File.findOneAndUpdate({ file_name: req.query.fileName, is_active: true }, { is_active: false })
+    // res.json({ allFiles });
+    res.status(201).json({ message: 'File Deleted successfully.' });
+  } catch (error) {
+    res.status(500).json({ error: { message: 'Error deleting file' } });
+
+  }
+
 })
 app.use(errorHandler);
 
