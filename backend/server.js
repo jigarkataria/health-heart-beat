@@ -116,7 +116,7 @@ app.post('/upload', authenticateToken, upload.single('file'), async (req, res) =
     res.status(201).json({ message: 'File uploaded successfully.', document_id: document._id });
   } catch (error) {
     console.log(error, 'error')
-    res.status(500).json({ error: { message: 'Error uploading file' } });
+    res.status(500).json({ error:  'Error uploading file'  });
   }
 });
 
@@ -142,7 +142,7 @@ app.get('/file', async (req, res) => {
     // // res.json({ fileUrl });
   } catch (error) {
     console.log('Error in /file', error);
-    res.status(500).json({ error: { message: 'Error retrieving file' } });
+    res.status(500).json({ error:  'Error retrieving file'  });
   }
 });
 
@@ -153,7 +153,7 @@ app.get('/getallfile', authenticateToken, async (req, res) => {
     const allFiles = await File.find({ user_id: req.user.id, is_active: true })
     res.json({ allFiles });
   } catch (error) {
-    res.status(500).json({ error: { message: 'Error retrieving file' } });
+    res.status(500).json({ error:  'Error retrieving file'  });
   }
 });
 
@@ -163,7 +163,7 @@ app.delete('/file', authenticateToken, async (req, res) => {
     // res.json({ allFiles });
     res.status(201).json({ message: 'File Deleted successfully.' });
   } catch (error) {
-    res.status(500).json({ error: { message: 'Error deleting file' } });
+    res.status(500).json({ error: 'Error deleting file'  });
 
   }
 
