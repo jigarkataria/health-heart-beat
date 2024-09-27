@@ -98,8 +98,7 @@ router.post('/signup', async (req, res, next) => {
         console.log(aadhaarError, '--aadhaar Error')
         return res.status(502).json({ error: 'Failed to connect to Aadhaar service. Please try again later.' });
       }
-      console.log(aadhaarResponse?.message, '------aadhaarResponse--------')
-      if (aadhaarResponse.message === 'OTP sent successfully.') {
+      if (aadhaarResponse?.data?.data?.message === 'OTP sent successfully.' || aadhaarResponse?.data?.data?.message === 'OTP sent successfully') {
         user.reference_id = aadhaarResponse?.data?.data?.reference_id;
         await user.save();
         return res.status(201).json({ message: 'User registered successfully. Aadhaar OTP sent.' });
@@ -180,26 +179,82 @@ function decrypt(encryptedText, secretKey) {
 
   return decrypted.toString();
 }
+// router.post('/request-reset-password', async (req, res) => {
+//   try {
+//   const { mobile_number } = req.body;
+
+//   const user = await User.findOne({ mobile_number });
+//   if (!user) return res.status(404).json({ message: 'User not found' });
+//   const otp = generateOTP();
+
+//   // Store OTP in user’s record with expiration
+//   user.resetOTP = otp;
+//   user.otpExpires = Date.now() + 10 * 60 * 1000; // OTP expires in 10 minutes
+//   await user.save();
+
+//   // Send OTP via SMS
+//   await client.messages.create({
+//     body: `Your password reset OTP is: ${otp}`,
+//     from: '+16017930493',
+//     to: `+91${user?.mobile_number}`
+//   });
+
+//   res.status(200).json({ message: 'OTP sent' });
+// } catch(error){
+//   res.se
+// }
+// });
+
+
+// POST: Request Password Reset
 router.post('/request-reset-password', async (req, res) => {
-  const { mobile_number } = req.body;
+  try {
+    const { mobile_number } = req.body;
 
-  const user = await User.findOne({ mobile_number });
-  if (!user) return res.status(404).json({ message: 'User not found' });
-  const otp = generateOTP();
+    // Check if mobile number is provided
+    if (!mobile_number) {
+      return res.status(400).json({ error: 'Mobile number is required' });
+    }
 
-  // Store OTP in user’s record with expiration
-  user.resetOTP = otp;
-  user.otpExpires = Date.now() + 10 * 60 * 1000; // OTP expires in 10 minutes
-  await user.save();
+    // Validate mobile number format (Indian mobile number in this case)
+    if (!/^\d{10}$/.test(mobile_number)) {
+      return res.status(400).json({ error: 'Invalid mobile number format. Must be 10 digits.' });
+    }
 
-  // Send OTP via SMS
-  await client.messages.create({
-    body: `Your password reset OTP is: ${otp}`,
-    from: '+16017930493',
-    to: `+91${user?.mobile_number}`
-  });
+    // Find the user by mobile number
+    const user = await User.findOne({ mobile_number });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
-  res.status(200).json({ message: 'OTP sent' });
+    // Generate OTP and set expiration time
+    const otp = generateOTP();
+    user.resetOTP = otp;
+    user.otpExpires = Date.now() + 10 * 60 * 1000; // OTP expires in 10 minutes
+
+    // Save the user with the new OTP and expiration
+    await user.save();
+
+    // Send OTP via SMS using Twilio or another SMS service
+    try {
+      await client.messages.create({
+        body: `Your password reset OTP is: ${otp}`,
+        from: '+16017930493',  // Use your own Twilio number
+        to: `+91${user?.mobile_number}`
+      });
+
+      // Respond with success if OTP is sent
+      return res.status(200).json({ message: 'OTP sent' });
+
+    } catch (smsError) {
+      console.error('Error sending OTP via SMS:', smsError);
+      return res.status(502).json({ error: 'Failed to send OTP via SMS. Please try again later.' });
+    }
+
+  } catch (error) {
+    console.error('Error in request-reset-password:', error);
+    return res.status(500).json({ error: 'An unexpected error occurred. Please try again.' });
+  }
 });
 
 const saveNewPassword = async (userId, newPassword) => {
@@ -209,38 +264,86 @@ const saveNewPassword = async (userId, newPassword) => {
   await User.findByIdAndUpdate(userId, {
     password: hashedPassword
   });
+  
 };
 
 router.post('/reset-password', async (req, res) => {
-  const { mobile_number, newPassword } = req.body;
-  const user = await User.findOne({ mobile_number });
-  if (!user) return res.status(404).json({ message: 'User not found' });
-
-
-  // Hash and save the new password
-  await saveNewPassword(user._id, newPassword);
-
-  res.status(200).json({ message: 'Password reset successfully' });
+  try {
+    const { mobile_number, newPassword } = req.body;
+    const user = await User.findOne({ mobile_number });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+  
+  
+    // Hash and save the new password
+    await saveNewPassword(user._id, newPassword);
+  
+    res.status(200).json({ message: 'Password reset successfully' });
+  } catch (error) {
+    res.status(500).json({message:error.message, error: "Something went wrong please try again."})
+  }
+  
 });
 
+// router.post('/check-otp', async (req, res) => {
+//   const { mobile_number, otp } = req.body;
+
+//   const user = await User.findOne({ mobile_number });
+//   if (!user) return res.status(404).json({ message: 'User not found' });
+
+//   // Check if OTP is valid and not expired
+//   if (user.resetOTP !== otp || Date.now() > user.otpExpires) {
+//     return res.status(400).json({ message: 'Invalid or expired OTP', error: 'Invalid or expired OTP' });
+//   }
+
+//   // Clear the OTP
+//   user.resetOTP = undefined;
+//   user.otpExpires = undefined;
+//   await user.save();
+
+//   res.status(200).json({ message: 'OTP checked successfully' });
+// })
+
 router.post('/check-otp', async (req, res) => {
-  const { mobile_number, otp } = req.body;
+  try {
+    const { mobile_number, otp } = req.body;
 
-  const user = await User.findOne({ mobile_number });
-  if (!user) return res.status(404).json({ message: 'User not found' });
+    // Check if mobile_number and otp are provided
+    if (!mobile_number || !otp) {
+      return res.status(400).json({ error: 'Mobile number and OTP are required' });
+    }
 
-  // Check if OTP is valid and not expired
-  if (user.resetOTP !== otp || Date.now() > user.otpExpires) {
-    return res.status(400).json({ message: 'Invalid or expired OTP', error: 'Invalid or expired OTP' });
+    // Validate mobile_number format (e.g., 10 digits for Indian numbers)
+    if (!/^\d{10}$/.test(mobile_number)) {
+      return res.status(400).json({ error: 'Invalid mobile number format' });
+    }
+
+    // Find the user by mobile number
+    const user = await User.findOne({ mobile_number });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check if OTP is valid and not expired
+    if (!user.resetOTP || user.resetOTP !== otp) {
+      return res.status(400).json({ error: 'Invalid OTP' });
+    }
+    
+    if (Date.now() > user.otpExpires) {
+      return res.status(400).json({ error: 'Expired OTP' });
+    }
+
+    // Clear the OTP and expiration
+    user.resetOTP = undefined;
+    user.otpExpires = undefined;
+    await user.save();
+
+    return res.status(200).json({ message: 'OTP verified successfully' });
+
+  } catch (error) {
+    console.error('Error in /check-otp:', error);
+    return res.status(500).json({ error: 'An unexpected error occurred' });
   }
-
-  // Clear the OTP
-  user.resetOTP = undefined;
-  user.otpExpires = undefined;
-  await user.save();
-
-  res.status(200).json({ message: 'OTP checked successfully' });
-})
+});
 
 async function getAuthToken() {
   try {
@@ -296,11 +399,6 @@ async function sendOtpAadhaar(mobile, aadhaar_number) {
       return ({ message: 'Aadhaar number is required.' });
     }
 
-    // Check if Aadhaar number is valid (e.g., 12 digits)
-    // if (!/^\d{12}$/.test(aadhaar_number)) {
-    //   return ({ message: 'Invalid Aadhaar number format. Aadhaar number must be 12 digits.' });
-    // }
-
     // Retrieve authorization token
     let token;
     try {
@@ -310,9 +408,9 @@ async function sendOtpAadhaar(mobile, aadhaar_number) {
     }
 
     // Proceed to send OTP to Aadhaar API
-    let response;
+    // let response;
     try {
-      response = await axios.post('https://api.sandbox.co.in/kyc/aadhaar/okyc/otp', {
+     let response = await axios.post('https://api.sandbox.co.in/kyc/aadhaar/okyc/otp', {
         'consent': 'Y',
         'reason': 'Testing new application',
         'aadhaar_number': aadhaar_number,
@@ -325,6 +423,7 @@ async function sendOtpAadhaar(mobile, aadhaar_number) {
           'Content-Type': 'application/json'
         },
       });
+      return response;
     } catch (apiError) {
       // Handle errors from the Aadhaar API
       if (apiError.response) {
@@ -340,15 +439,6 @@ async function sendOtpAadhaar(mobile, aadhaar_number) {
         // Something happened in setting up the request
         return json({ message: 'Error setting up the request.', error: apiError.message });
       }
-    }
-
-    // Check the response from the Aadhaar API
-    const { data } = response;
-    if (data && data.data && data.data.message === 'OTP sent successfully') {
-      return ({ message: 'OTP sent successfully.', reference_id: data.data.reference_id });
-    } else {
-      // If OTP was not sent successfully
-      return ({ message: 'Failed to send OTP. Please check the details and try again.' });
     }
 
   } catch (error) {
@@ -380,11 +470,10 @@ router.post('/verify-aadhaar-otp', async (req, res) => {
         'Content-Type': 'application/json'
       },
     });
-    // console.log(response, '--response ---')
     if (response?.data?.data?.message === 'Aadhaar Card Exists') {
       // console.log(response?.data?.data?.mobile_hash, '--esponse?.data?.data?.mobile_hash--')
       await User.findOneAndUpdate({ email: user.mobile_number }, { mobile_hash: response?.data?.data?.mobile_hash })
-      res.send({ message: response?.data?.data?.message })
+      res.send({ message: "Aadhaar OTP verified successfully." })
     } else {
       res.status(422).send({ error: { message: response?.data?.data?.message } })
     }
