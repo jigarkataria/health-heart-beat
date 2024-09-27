@@ -475,7 +475,7 @@ router.post('/verify-aadhaar-otp', async (req, res) => {
       await User.findOneAndUpdate({ email: user.mobile_number }, { mobile_hash: response?.data?.data?.mobile_hash })
       res.send({ message: "Aadhaar OTP verified successfully." })
     } else {
-      res.status(422).send({ error: { message: response?.data?.data?.message } })
+      res.status(422).send({ error:  response?.data?.data?.message } )
     }
   } catch (error) {
     res.status('500').send({message:error, error:"Something went wrong please try again."})
