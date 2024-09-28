@@ -142,7 +142,7 @@ router.post('/resend-aadhaar-otp', async (req, res, next) => {
         // console.log(aadhaarResponse,'---- aadhaarResponse -----',reference_id,aadhaarNumber,mobile_number)
         const user = await User.findOneAndUpdate({ $and: [{ aadhaarNumber, mobile_number }] }, { reference_id })
         // console.log(user)
-        return res.status(201).json({ message: 'User registered successfully. Aadhaar OTP sent.' });
+        return res.status(201).json({ message: 'Aadhaar OTP sent successfully.' });
       } else {
         return res.status(422).json({ error: `Aadhaar verification failed: ${aadhaarResponse?.data?.data?.message || aadhaarResponse?.message}` });
       }
