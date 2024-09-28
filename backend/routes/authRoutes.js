@@ -121,6 +121,42 @@ router.post('/signup', async (req, res, next) => {
   }
 });
 
+router.post('/resend-aadhaar-otp', async (req, res, next) => {
+  try {
+    const { aadhaarNumber, mobile_number } = req.body;
+
+    const existingUser = await User.findOne({
+      $or: [{ mobile_number }, { aadhaarNumber }]
+    }).sort({ _id: -1 });
+
+    if (aadhaarNumber) {
+      let aadhaarResponse;
+      try {
+        aadhaarResponse = await sendOtpAadhaar(mobile_number, aadhaarNumber);
+      } catch (aadhaarError) {
+        // console.log(aadhaarError, '--aadhaar Error')
+        return res.status(502).json({ error: 'Failed to connect to Aadhaar service. Please try again later.' });
+      }
+      if (aadhaarResponse?.data?.data?.message === 'OTP sent successfully.' || aadhaarResponse?.data?.data?.message === 'OTP sent successfully') {
+        let reference_id = aadhaarResponse?.data?.data?.reference_id;
+        // console.log(aadhaarResponse,'---- aadhaarResponse -----',reference_id,aadhaarNumber,mobile_number)
+        const user = await User.findOneAndUpdate({ $and: [{ aadhaarNumber, mobile_number }] }, { reference_id })
+        // console.log(user)
+        return res.status(201).json({ message: 'User registered successfully. Aadhaar OTP sent.' });
+      } else {
+        return res.status(422).json({ error: `Aadhaar verification failed: ${aadhaarResponse?.data?.data?.message || aadhaarResponse?.message}` });
+      }
+    }
+  } catch (error) {
+    console.log(error)
+    // Handle validation or other errors
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ error: error.message });
+    }
+    return next(error);
+  }
+})
+
 
 router.post('/updateUser', async (req, res, next) => {
   try {
@@ -264,7 +300,7 @@ const saveNewPassword = async (userId, newPassword) => {
   await User.findByIdAndUpdate(userId, {
     password: hashedPassword
   });
-  
+
 };
 
 router.post('/reset-password', async (req, res) => {
@@ -272,16 +308,16 @@ router.post('/reset-password', async (req, res) => {
     const { mobile_number, newPassword } = req.body;
     const user = await User.findOne({ mobile_number });
     if (!user) return res.status(404).json({ message: 'User not found' });
-  
-  
+
+
     // Hash and save the new password
     await saveNewPassword(user._id, newPassword);
-  
+
     res.status(200).json({ message: 'Password reset successfully' });
   } catch (error) {
-    res.status(500).json({message:error.message, error: "Something went wrong please try again."})
+    res.status(500).json({ message: error.message, error: "Something went wrong please try again." })
   }
-  
+
 });
 
 // router.post('/check-otp', async (req, res) => {
@@ -327,7 +363,7 @@ router.post('/check-otp', async (req, res) => {
     if (!user.resetOTP || user.resetOTP !== otp) {
       return res.status(400).json({ error: 'Invalid OTP' });
     }
-    
+
     if (Date.now() > user.otpExpires) {
       return res.status(400).json({ error: 'Expired OTP' });
     }
@@ -410,7 +446,7 @@ async function sendOtpAadhaar(mobile, aadhaar_number) {
     // Proceed to send OTP to Aadhaar API
     // let response;
     try {
-     let response = await axios.post('https://api.sandbox.co.in/kyc/aadhaar/okyc/otp', {
+      let response = await axios.post('https://api.sandbox.co.in/kyc/aadhaar/okyc/otp', {
         'consent': 'Y',
         'reason': 'Testing new application',
         'aadhaar_number': aadhaar_number,
@@ -458,28 +494,28 @@ router.post('/verify-aadhaar-otp', async (req, res) => {
       return res.status(500).json({ message: 'Failed to retrieve authorization token.', error: "Something went wrong please try again." });
     }
     try {
-    const response = await axios.post('https://api.sandbox.co.in/kyc/aadhaar/okyc/otp/verify', {
-      '@entity': 'in.co.sandbox.kyc.aadhaar.okyc.request',
-      reference_id: user?.reference_id,
-      otp: otp
-    }, {
-      headers: {
-        'authorization': token,
-        'x-api-key': 'key_live_b8P6Xan5P9Id2VzLdSijJLA97ZBIh7S1',
-        'x-api-version': '2.0',
-        'Content-Type': 'application/json'
-      },
-    });
-    if (response?.data?.data?.message === 'Aadhaar Card Exists') {
-      // console.log(response?.data?.data?.mobile_hash, '--esponse?.data?.data?.mobile_hash--')
-      await User.findOneAndUpdate({ email: user.mobile_number }, { mobile_hash: response?.data?.data?.mobile_hash })
-      res.send({ message: "Aadhaar OTP verified successfully." })
-    } else {
-      res.status(422).send({ error:  response?.data?.data?.message } )
+      const response = await axios.post('https://api.sandbox.co.in/kyc/aadhaar/okyc/otp/verify', {
+        '@entity': 'in.co.sandbox.kyc.aadhaar.okyc.request',
+        reference_id: user?.reference_id,
+        otp: otp
+      }, {
+        headers: {
+          'authorization': token,
+          'x-api-key': 'key_live_b8P6Xan5P9Id2VzLdSijJLA97ZBIh7S1',
+          'x-api-version': '2.0',
+          'Content-Type': 'application/json'
+        },
+      });
+      if (response?.data?.data?.message === 'Aadhaar Card Exists') {
+        // console.log(response?.data?.data?.mobile_hash, '--esponse?.data?.data?.mobile_hash--')
+        await User.findOneAndUpdate({ email: user.mobile_number }, { mobile_hash: response?.data?.data?.mobile_hash })
+        res.send({ message: "Aadhaar OTP verified successfully." })
+      } else {
+        res.status(422).send({ error: response?.data?.data?.message })
+      }
+    } catch (error) {
+      res.status('500').send({ message: error, error: "Something went wrong please try again." })
     }
-  } catch (error) {
-    res.status('500').send({message:error, error:"Something went wrong please try again."})
-  }
 
   } catch (error) {
     res.status(500).send({ error })
